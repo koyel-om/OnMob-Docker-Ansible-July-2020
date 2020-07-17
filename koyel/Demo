@@ -1,0 +1,216 @@
+Koyel Mahata 13.232.15.167    
+
+https://github.com/devopsschool-training-notes/OnMob-Docker-Ansible-July-2020
+
+docker commit -m"centos_java_git_tomcat" -a "Koyel"  6e96b1ae58dc centos_java_git_tomcat
+
+
+doc file:
+=================================
+
+FROM centos
+
+MAINTAINER koyel Mahata koyel.m@onmobile.com
+
+RUN yum -y install nginx
+
+ARG user=koyel
+ARG group=koyel
+ARG uid=1000
+ARG gid=1000
+ARG http_port=8080
+ARG agent_port=50000
+
+ENV NGINX_HOME /var/nginx_home
+
+RUN groupadd -g ${gid} ${group} && useradd -d "$NGINX_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user}
+
+ENV koyel=rajesh
+
+VOLUME /var/koyel_home
+
+USER ${user}
+
+EXPOSE ${http_port}
+EXPOSE ${agent_port}
+
+CMD ["/bin/bash"]
+
+
+===========================================================
+
+RUN groupadd -g 1000 koyel && useradd -d "$NGINX_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user}
+
+
+ 
+ Ansible:
+
+Program 1 – Write a Ansible Adhoc Commands to create a group called “deploy
+ansible localhost -m group -a"name=deploy"
+more /etc/group | grep deploy
+
+Program 2 – Write a Ansible Adhoc Commands to create a user called “deploy-user” which is part of group called “deploy” and with /bin/bash shell.
+ansible localhost -m user -a"name=deploy-user group=deploy shell=/bin/bash"
+more /etc/passwd | grep deploy-user
+
+Program 3 – Write a Ansible Adhoc commands install package named “httpd” in RHEL/centos.
+ansible localhost -m yum -a"name=httpd state=installed"
+which httpd
+
+Program 4 – Write a Ansible Adhoc commands to start and enable the service named “httpd”
+ansible localhost -m service -a"name=httpd state=started"
+ps -eaf | grep httpd
+
+Program 5 – Write a Ansible commands to create a file called “index.html” in /var/www/html with some dummy html contents.
+ansible localhost -m copy -a"src=index.html dest=/var/www/html"
+ansible localhost -m lineinfile -a"create=yes path=/var/www/html/index.html line='it is index'"
+http://13.233.179.105:80
+
+Program 6 – Write a Ansible commands to copy a file called “second.html” in /var/www/html/second.html with some dummy html contents.
+ansible localhost -m copy -a"src=second.html dest=/var/www/html"
+Browse http://13.233.179.105:80/second.html
+
+Program 7 – Write a Ansible commands to install a package called “git”, “wget”.
+ansible localhost -m yum -a"name=git,wget state=installed"
+
+$ which git
+$ which wget
+
+Program 8 – Write a Ansible Adhoc commands to clone git repo. https://github.com/scmgalaxy/ansible-role-template.
+ansible localhost -m git -a"clone=yes dest=/opt/test repo=https://github.com/scmgalaxy/ansible-role-template"
+$ ls
+
+Program 9 – Write a Ansible commands to reboot a self machine.
+ansible localhost -m reboot
+
+Program 10 – Write a Ansible commands to touch a file called “devopsschool.txt” in /opt/ and delete after using ansible adhoc command.
+ansible localhost -m file -a"name=devopsschool.txt path=/opt state=touch"
+ansible localhost -m file -a"name=devopsschool.txt path=/opt state=absent"
+
+
+
+
+
+PLaybook:
+
+---
+- name: Start the Play
+  hosts: web1
+  tasks:
+    - name: Creating group name deploy
+      group:
+        name: deploy
+    - name: creating deploy-user
+      user:
+        name: deploy-user
+        group: deploy
+        shell: /bin/bash
+    - name: Installing httpd
+      yum:
+        name: httpd
+        state: installed
+    - name: starting httpd
+      service:
+        name: httpd
+        state: started
+    - name: Creating index.html file
+      lineinfile:
+        create: yes
+        path: /var/www/html/index.html
+        line: it is index
+    - name: Installing git and wget
+      yum:
+        name: git,wget
+        state: installed
+    - name: Cloning from git
+      git:
+        clone: yes
+        dest: /root/OnMob-Docker-Ansible-July-2020/koyel
+        repo: https://github.com/scmgalaxy/ansible-role-template
+
+
+=====================================================================
+
+https://docs.ansible.com/ansible/latest/plugins/plugins.html
+https://docs.ansible.com/ansible/latest/plugins/lookup.html
+
+https://www.devopsschool.com/blog/use-of-runtime-variables-to-save-into-another-variable-using-register-in-ansible/
+
+
+
+- name: Start the Play
+  hosts: weball
+  tasks:
+  - name: install the latest version of Apache
+    yum:
+      name: httpd
+      state: present
+    when: ansible_os_family == "RedHat"
+
+  - name: Install apache httpd  (state=present is optional)
+    apt:
+      name: apache2
+      state: present   
+      update_cache: yes
+    when: ansible_os_family == "Debian"
+	
+  - name: Recursively find /etc files
+    find:
+      paths: /etc
+      recurse: yes
+
+  - debug:
+      msg: This is a directory {{file}} in /etc
+    with_items:
+      - "{{ file.stdout_lines }}"
+	  
+===============================================
+	  
+	  ansible-galaxy init role/vars/
+	  
+	  
+	  ---
+# tasks file for role/vars/
+
+- name: install the latest version of httpd
+    yum:
+      name: httpd
+      state: present
+    when: ansible_os_family == "RedHat"
+
+- name: Listing out directory from /etc
+    shell: "ls -d /etc/*/"
+    register: result
+
+- name: Install common software requirements
+    apt: pkg={{ item }} state=present
+    with_items:
+       - git
+       - ntp
+       - vim
+	   
+	   
+
+- name: Template a file to /etc/files.conf
+    template:
+      src: httpd.conf.j2
+      dest: /etc/httpd/conf/httpd.conf
+    notify: restart service
+	
+- name: Template a file to /etc/files.conf
+    template:
+      src: index.html.j2
+      dest: /var/www/html/index.html
+	  
+	  
+	  
+=====================================================
+module --> plugin --> look up --> ansible galaxy
+
+
+
+
+		
+
+
+
